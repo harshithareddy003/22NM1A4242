@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Frontend Logging Middleware - Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 24px auto; }
+    label { display:block; margin-top:12px; }
+    select, input[type=text], textarea { width:100%; padding:8px; margin-top:6px; box-sizing:border-box; }
+    button { margin-top:12px; padding:10px 14px; }
+    pre { background:#f4f4f4; padding:12px; border-radius:6px; white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>Frontend Logging Middleware (Demo)</h2>
+
+  <label>API endpoint (replace with URL on your sheet if different)
+    <input id="apiUrl" type="text" value="http://20.244.56.144/evaluation-service/logs" />
+  </label>
+
+  <label>Stack
+    <select id="stack">
+      <option value="frontend">frontend</option>
+      <option value="backend">backend</option>
+    </select>
+  </label>
+
+  <label>Level
+    <select id="level">
+      <option value="info">info</option>
+      <option value="debug">debug</option>
+      <option value="warn">warn</option>
+      <option value="error">error</option>
+      <option value="fatal">fatal</option>
+    </select>
+  </label>
+
+  <label>Package
+    <select id="pkg">
+      <option value="component">component</option>
+      <option value="service">service</option>
+      <option value="controller">controller</option>
+      <option value="repository">repository</option>
+      <option value="utils">utils</option>
+      <option value="style">style</option>
+      <option value="api">api</option>
+    </select>
+  </label>
+
+  <label>Message
+    <textarea id="message" rows="3">User clicked test button</textarea>
+  </label>
+
+  <button id="send">Send Log</button>
+  <button id="sendSample">Send Sample Error</button>
+
+  <h3>Result / Server response</h3>
+  <pre id="result">No request yet.</pre>
+
+  <script>
+    const apiInput = document.getElementById('apiUrl');
+    const stackInput = document.getElementById('stack');
+    const levelInput = document.getElementById('level');
+    const pkgInput = document.getElementById('pkg');
+    const msgInput = document.getElementById('message');
+    const resultBox = document.getElementById('result');
+
+    function buildPayload() {
+      return {
+        stack: String(stackInput.value).toLowerCase(),
+        level: String(levelInput.value).toLowerCase(),
+        package: String(pkgInput.value).toLowerCase(),
+        message: String(msgInput.value)
+      };
+    }
+
+    async function sendLog(payload) {
+      const API_URL = apiInput.value.trim();
+      resultBox.textContent = 'Sending...';
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        let parsed;
+        try { parsed = JSON.parse(text); } catch(e) { parsed = text; }
+        resultBox.textContent = 'HTTP ' + res.status + '\\n' + JSON.stringify(parsed, null, 2);
+        console.log('Response:', res.status, parsed);
+      } catch (err) {
+        resultBox.textContent = 'Request failed — check console. Error: ' + err.message;
+        console.error(err);
+      }
+    }
+
+    document.getElementById('send').addEventListener('click', () => sendLog(buildPayload()));
+    document.getElementById('sendSample').addEventListener('click', () => {
+      sendLog({ stack:'frontend', level:'error', package:'component', message:'Sample error: cannot load profile' });
+    });
+  </script>
+</body>
+</html>
